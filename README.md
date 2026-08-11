@@ -1,4 +1,4 @@
-# Metaverse Creator
+# Metaverse Creator by beni
 
 Cloudflare Workers service for creating, inspecting, customising, maintaining, and preparing 3D worlds and scenes.
 
