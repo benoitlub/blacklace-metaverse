@@ -1,10 +1,10 @@
 # Blacklace Metaverse Adapter
 
-Cloudflare Workers service that bridges creative intent, a configured narrative-generation backend, and a replaceable 3D asset provider.
+Cloudflare Workers service that bridges creative intent, a configured narrative context provider, a generation backend, and a replaceable 3D asset provider.
 
 ## Role
 
-This service is intentionally stateless and does not reimplement the external generation backend it consumes.
+This service is intentionally stateless. It does not reimplement any external backend it consumes.
 
 ```text
 Creative intent
@@ -12,12 +12,17 @@ Creative intent
       v
 blacklace-metaverse
       |
-      +--> configured generation backend
+      +--> lore/context provider
+      |          |
+      |          v
+      |      narrative context
+      |
+      +--> generation backend
       |          |
       |          v
       |      rich 3D prompt
       |
-      +--> replaceable 3D provider adapter
+      +--> replaceable 3D provider
                  |
                  v
                 GLB
@@ -37,7 +42,7 @@ Request:
 }
 ```
 
-The service validates the intention, sends it to the configured generation endpoint, passes the resulting prompt to the selected 3D provider adapter, and returns the generated asset descriptor.
+The service validates the intention, obtains narrative context from the configured lore provider, sends the intention plus that context to the configured generation backend, passes the resulting prompt to the selected 3D provider adapter, and returns the generated asset descriptor.
 
 Example response in mock mode:
 
@@ -46,6 +51,7 @@ Example response in mock mode:
   "status": "mocked",
   "intent": "Génère le décor d’une zone industrielle mystérieuse de Blacklace Island",
   "prompt": "Create a rich, coherent 3D environment prompt...",
+  "loreSource": "mock",
   "provider": "mock",
   "asset": {
     "format": "glb",
@@ -68,7 +74,7 @@ npm run typecheck
 npm run dev
 ```
 
-The example local configuration explicitly enables mock mode. It therefore does not call external generation services and does not require API keys.
+The example local configuration explicitly enables mock mode for lore, the generation backend, and 3D generation. It therefore does not call external generation services and does not require API keys.
 
 Test the route:
 
@@ -79,6 +85,14 @@ curl -X POST http://localhost:8787/generate \
 ```
 
 ## Environment variables
+
+### Narrative context provider
+
+- `LORE_PROVIDER` — logical adapter name; use `mock` for local development.
+- `LORE_API_URL` — endpoint of the configured narrative/lore provider.
+- `LORE_API_KEY` — optional bearer credential.
+
+The current implementation intentionally does not know whether the external provider is Notion, another knowledge service, or a future Blacklace-specific API. A provider-specific protocol belongs behind `LoreProvider`.
 
 ### Generation backend
 
@@ -103,14 +117,7 @@ Never commit API keys. Use `.dev.vars` locally and Cloudflare Worker secrets for
 
 The project is Hono + TypeScript and uses the Workers `fetch` runtime directly. It deliberately has no Express, Node TCP modules, PostgreSQL client, database, or Replit-specific configuration.
 
-For deployment, configure the external connection values and secrets with Wrangler, for example:
-
-```bash
-npx wrangler login
-npx wrangler secret put OCTOPUS_ENGINE_API_KEY
-npx wrangler secret put THREE_D_API_KEY
-npm run deploy
-```
+For deployment, configure the external connection values and secrets with Wrangler. Secret names should match the environment bindings used by the service.
 
 Do not enable mock mode in a production deployment unless that behavior is explicitly intended and reviewed.
 
@@ -129,7 +136,7 @@ GitHub Actions runs TypeScript validation on pushes to `main` and pull requests 
 
 Blacklace-specific narrative logic belongs in this service or in dedicated lore providers introduced later. External systems remain replaceable integration boundaries. The generation backend must not import or depend on this service.
 
-No database is used at this stage: request in, generated prompt, asset result out.
+No database is used at this stage: request in, context in, generated prompt, asset result out.
 
 ## Provider policy
 
@@ -139,6 +146,7 @@ No database is used at this stage: request in, generated prompt, asset result ou
 4. A provider failure is an integration failure; it must not silently fall back to another provider.
 5. Mock mode must be explicit.
 6. Adding or replacing an external provider must not require modifying the HTTP contract.
+7. The application names capabilities and interfaces; it does not hardcode a commercial vendor as the architecture.
 
 ## Next implementation step
 
