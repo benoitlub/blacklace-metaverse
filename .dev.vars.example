@@ -4,6 +4,11 @@ OCTOPUS_ENGINE_API_KEY=
 OCTOPUS_ENGINE_GENERATE_PATH=/content.generate
 OCTOPUS_ENGINE_MOCK=true
 
+# Lore is a provider boundary. Keep it mocked locally until a concrete protocol adapter is added.
+LORE_PROVIDER=mock
+LORE_API_URL=
+LORE_API_KEY=
+
 # Keep external 3D generation mocked until a provider-specific protocol adapter is added.
 THREE_D_PROVIDER=mock
 THREE_D_API_URL=
