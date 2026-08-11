@@ -1,7 +1,13 @@
 import type { Env } from "../index";
-import type { LoreProvider, LoreContext } from "../types";
+import type { LoreContext, LoreProvider } from "../types";
 
 const DEFAULT_TIMEOUT_MS = 15_000;
+
+class NoneLoreProvider implements LoreProvider {
+  async getContext(): Promise<LoreContext> {
+    return { source: "none", context: "" };
+  }
+}
 
 class MockLoreProvider implements LoreProvider {
   async getContext(intent: string): Promise<LoreContext> {
@@ -58,15 +64,14 @@ class HttpLoreProvider implements LoreProvider {
 }
 
 export function createLoreProvider(env: Env): LoreProvider {
-  const provider = (env.LORE_PROVIDER ?? "mock").trim().toLowerCase();
+  const provider = (env.LORE_PROVIDER ?? "none").trim().toLowerCase();
 
-  if (provider === "mock") {
-    return new MockLoreProvider();
-  }
+  if (provider === "none" || provider === "") return new NoneLoreProvider();
+  if (provider === "mock") return new MockLoreProvider();
 
   if (!env.LORE_API_URL) {
-    throw new Error("LORE_API_URL is required when mock lore is disabled");
+    throw new Error("LORE_API_URL is required when lore mock is disabled");
   }
 
-  return new HttpLoreProvider(env.LORE_API_URL, env.LORE_API_KEY, provider || "external");
+  return new HttpLoreProvider(env.LORE_API_URL, env.LORE_API_KEY, provider);
 }
