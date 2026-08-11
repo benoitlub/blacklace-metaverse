@@ -4,4 +4,6 @@ compatibility_date = "2026-08-11"
 
 [vars]
 OCTOPUS_ENGINE_URL = "https://octopus-engine-app.benoitlubert.workers.dev"
+OCTOPUS_ENGINE_GENERATE_PATH = "/content.generate"
+OCTOPUS_ENGINE_MOCK = "false"
 THREE_D_PROVIDER = "mock"
