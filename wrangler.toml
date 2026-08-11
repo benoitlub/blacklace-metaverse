@@ -1,0 +1,7 @@
+name = "blacklace-metaverse"
+main = "src/index.ts"
+compatibility_date = "2026-08-11"
+
+[vars]
+OCTOPUS_ENGINE_URL = "https://octopus-engine-app.benoitlubert.workers.dev"
+THREE_D_PROVIDER = "mock"
