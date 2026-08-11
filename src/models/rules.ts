@@ -1,4 +1,5 @@
-import type { Id, WorldValue } from "./state";
+import type { WorldValue } from "./state";
+import type { Id } from "./world";
 
 export type RuleOperator =
   | "equals"
