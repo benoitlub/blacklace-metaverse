@@ -1,0 +1,23 @@
+{
+  "name": "blacklace-metaverse-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pont entre l'univers narratif Blacklace Island et un metavers Unity : intention creative -> octopus-engine (content.generate) -> API de generation 3D -> GLB.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260811.1",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.120.1"
+  }
+}

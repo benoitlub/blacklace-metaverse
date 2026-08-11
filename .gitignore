@@ -1,0 +1,26 @@
+# Dépendances
+node_modules/
+
+# Secrets — ne jamais committer
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Build / cache
+dist/
+.wrangler/
+.mf/
+*.tsbuildinfo
+
+# Outils et éditeurs
+.DS_Store
+.vscode/
+.idea/
+coverage/
+*.log
+npm-debug.log*

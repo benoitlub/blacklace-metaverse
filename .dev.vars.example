@@ -1,0 +1,15 @@
+# Copier en `.dev.vars` (gitignoré) puis renseigner. Utilisé par `wrangler dev`.
+# En production : `wrangler secret put <NOM>`.
+
+# --- Octopus Engine ---
+# "mock" fonctionne sans aucun secret. Passer à "live" pour appeler le vrai moteur.
+OCTOPUS_MODE=mock
+OCTOPUS_BASE_URL=https://octopus-engine-app.benoitlubert.workers.dev
+# Octopus n'exige aucune authentification aujourd'hui ; prévu si cela change.
+# OCTOPUS_API_KEY=
+
+# --- Génération 3D ---
+# "mock" | "meshy" | "tripo"
+MESH3D_PROVIDER=mock
+# MESHY_API_KEY=
+# TRIPO_API_KEY=
