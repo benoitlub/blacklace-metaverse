@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../index";
 import { generateWithOctopus } from "../adapters/octopus";
+import { createLoreProvider } from "../adapters/lore";
 import { createThreeDProvider } from "../adapters/three-d";
 import type { GenerateRequest } from "../types";
 
@@ -30,7 +31,9 @@ generateRoute.post("/generate", async (c) => {
   }
 
   try {
-    const prompt = await generateWithOctopus(intent, c.env);
+    const loreProvider = createLoreProvider(c.env);
+    const lore = await loreProvider.getContext(intent);
+    const prompt = await generateWithOctopus(intent, lore, c.env);
     const provider = createThreeDProvider(c.env);
     const asset = await provider.generate(prompt);
 
@@ -38,6 +41,7 @@ generateRoute.post("/generate", async (c) => {
       status: asset.provider === "mock" ? "mocked" : "completed",
       intent,
       prompt,
+      loreSource: lore.source,
       provider: asset.provider,
       asset,
     });
