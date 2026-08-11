@@ -23,7 +23,39 @@ blacklace-metaverse
                 GLB
 ```
 
-The first scaffold uses mocks for the 3D provider. Meshy and Tripo can be added behind the same adapter boundary later.
+The 3D provider boundary is deliberately replaceable. The current implementation provides a deterministic mock provider; Meshy and Tripo can be added without changing the HTTP route contract.
+
+## HTTP contract
+
+### `POST /generate`
+
+Request:
+
+```json
+{
+  "intent": "Génère le décor d’une zone industrielle mystérieuse de Blacklace Island"
+}
+```
+
+The service validates the intention, sends it to the configured Octopus generation endpoint, passes the resulting prompt to the selected 3D provider, and returns the generated asset descriptor.
+
+Example response in mock mode:
+
+```json
+{
+  "status": "mocked",
+  "intent": "Génère le décor d’une zone industrielle mystérieuse de Blacklace Island",
+  "prompt": "Create a rich, coherent 3D environment prompt...",
+  "provider": "mock",
+  "asset": {
+    "format": "glb",
+    "provider": "mock",
+    "url": "mock://generated/..."
+  }
+}
+```
+
+The mock URL is a test descriptor, not a real GLB file. A real provider adapter will return the provider's downloadable GLB URL or equivalent asset location.
 
 ## Local development
 
@@ -36,6 +68,8 @@ npm run typecheck
 npm run dev
 ```
 
+The example local configuration sets `OCTOPUS_ENGINE_MOCK=true` and `THREE_D_PROVIDER=mock`, so local development does not call external generation services and does not require API keys.
+
 Test the route:
 
 ```bash
@@ -44,17 +78,17 @@ curl -X POST http://localhost:8787/generate \
   -d '{"intent":"Génère le décor d’une zone industrielle mystérieuse de Blacklace Island"}'
 ```
 
-The default configuration uses `THREE_D_PROVIDER=mock`, so no 3D provider API key is required.
-
 ## Environment variables
 
 - `OCTOPUS_ENGINE_URL` — Octopus Engine base URL.
-- `OCTOPUS_ENGINE_API_KEY` — optional API key, if the deployed Octopus endpoint requires one.
-- `THREE_D_PROVIDER` — currently `mock`; reserved values are `meshy` and `tripo`.
+- `OCTOPUS_ENGINE_GENERATE_PATH` — generation path; defaults to `/content.generate`.
+- `OCTOPUS_ENGINE_API_KEY` — optional bearer token when the deployed Octopus endpoint requires authentication.
+- `OCTOPUS_ENGINE_MOCK` — set to `true` to bypass the external Octopus call locally.
+- `THREE_D_PROVIDER` — currently `mock`; `meshy` and `tripo` are reserved for real implementations.
 - `MESHY_API_KEY` — reserved for the Meshy adapter.
 - `TRIPO_API_KEY` — reserved for the Tripo adapter.
 
-Secrets belong in `.dev.vars` locally or Cloudflare Worker secrets in deployment. Never commit API keys.
+Never commit API keys. Use `.dev.vars` locally and Cloudflare Worker secrets for sensitive deployment values.
 
 ## Cloudflare Workers
 
@@ -70,28 +104,25 @@ npx wrangler secret put TRIPO_API_KEY
 npm run deploy
 ```
 
-## GitHub
+`OCTOPUS_ENGINE_MOCK=false` is configured in `wrangler.toml`, because the deployed service is intended to consume the real Octopus backend.
 
-To work locally from this repository:
+## GitHub
 
 ```bash
 git clone https://github.com/benoitlub/blacklace-metaverse.git
 cd blacklace-metaverse
 npm install
+npm run typecheck
 ```
 
-Then commit and push changes normally:
-
-```bash
-git add .
-git commit -m "feat: ..."
-git push origin main
-```
-
-The repository contains a minimal GitHub Actions workflow that runs TypeScript validation on pushes and pull requests.
+GitHub Actions runs TypeScript validation on pushes to `main` and pull requests targeting `main`.
 
 ## Architecture boundary
 
 Blacklace-specific narrative logic belongs here or in future dedicated providers. Octopus Engine remains a neutral backend and must not import or depend on this service.
 
 No database is used at this stage: request in, generated prompt, asset result out.
+
+## Next implementation step
+
+The next bounded step is a real 3D provider adapter. It should implement only the existing `ThreeDProvider` interface and handle the provider-specific asynchronous task lifecycle, polling, and GLB result URL. It must not alter Octopus Engine or introduce a database into this service.
