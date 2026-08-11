@@ -1,0 +1,30 @@
+name: Cockpit CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cockpit/**"
+      - ".github/workflows/cockpit.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "cockpit/**"
+      - ".github/workflows/cockpit.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cockpit
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cockpit/package.json
+      - run: npm install
+      - run: npm run typecheck
+      - run: npm run build
