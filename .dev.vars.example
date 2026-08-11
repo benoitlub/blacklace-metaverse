@@ -1,0 +1,5 @@
+OCTOPUS_ENGINE_URL=https://octopus-engine-app.benoitlubert.workers.dev
+OCTOPUS_ENGINE_API_KEY=
+THREE_D_PROVIDER=mock
+MESHY_API_KEY=
+TRIPO_API_KEY=
