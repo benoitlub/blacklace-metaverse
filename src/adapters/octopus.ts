@@ -1,16 +1,20 @@
 import type { Env } from "../index";
-import type { OctopusGenerateResponse } from "../types";
+import type { LoreContext, OctopusGenerateResponse } from "../types";
 
 const DEFAULT_GENERATE_PATH = "/content.generate";
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-export async function generateWithOctopus(intent: string, env: Env): Promise<string> {
+export async function generateWithOctopus(
+  intent: string,
+  lore: LoreContext,
+  env: Env,
+): Promise<string> {
   if (env.OCTOPUS_ENGINE_MOCK === "true") {
-    return mockOctopusPrompt(intent);
+    return mockOctopusPrompt(intent, lore);
   }
 
   if (!env.OCTOPUS_ENGINE_URL) {
-    return mockOctopusPrompt(intent);
+    throw new Error("OCTOPUS_ENGINE_URL is required when Octopus mock is disabled");
   }
 
   const baseUrl = env.OCTOPUS_ENGINE_URL.replace(/\/$/, "");
@@ -27,7 +31,10 @@ export async function generateWithOctopus(intent: string, env: Env): Promise<str
           ? { authorization: `Bearer ${env.OCTOPUS_ENGINE_API_KEY}` }
           : {}),
       },
-      body: JSON.stringify({ intent }),
+      body: JSON.stringify({
+        intent,
+        context: lore.context,
+      }),
       signal: controller.signal,
     });
 
@@ -53,6 +60,6 @@ export async function generateWithOctopus(intent: string, env: Env): Promise<str
   }
 }
 
-function mockOctopusPrompt(intent: string): string {
-  return `Create a rich, coherent 3D environment prompt from this creative intention, preserving the requested narrative intent and visual consistency. Intention: ${intent}`;
+function mockOctopusPrompt(intent: string, lore: LoreContext): string {
+  return `Create a rich, coherent 3D environment prompt from this creative intention, preserving the requested narrative intent and the supplied lore context. Intention: ${intent}. Lore context: ${lore.context}`;
 }
