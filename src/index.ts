@@ -30,6 +30,9 @@ export interface Env {
   OCTOPUS_ENGINE_API_KEY?: string;
   OCTOPUS_ENGINE_GENERATE_PATH?: string;
   OCTOPUS_ENGINE_MOCK?: string;
+  LORE_PROVIDER?: string;
+  LORE_API_URL?: string;
+  LORE_API_KEY?: string;
   THREE_D_PROVIDER?: string;
   THREE_D_API_URL?: string;
   THREE_D_API_KEY?: string;
