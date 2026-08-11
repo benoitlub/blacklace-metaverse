@@ -53,12 +53,17 @@ export default app;
 export interface Env {
   OCTOPUS_ENGINE_URL: string;
   OCTOPUS_ENGINE_API_KEY?: string;
-  OCTOPUS_ENGINE_GENERATE_PATH?: string;
+  /** Mission route on the generation backend. Defaults to /mission. */
+  OCTOPUS_ENGINE_MISSION_PATH?: string;
+  /** Capability requested from the backend. Defaults to content.generate. */
+  OCTOPUS_ENGINE_CAPABILITY?: string;
   OCTOPUS_ENGINE_MOCK?: string;
   LORE_PROVIDER?: string;
   LORE_API_URL?: string;
   LORE_API_KEY?: string;
+  /** Logical adapter name: mock, meshy or tripo. */
   THREE_D_PROVIDER?: string;
+  /** Optional base URL override for the selected asset provider. */
   THREE_D_API_URL?: string;
   THREE_D_API_KEY?: string;
 }

@@ -65,26 +65,51 @@ Request:
 }
 ```
 
-The service validates the intention, obtains optional context from the configured context provider, sends the intention plus context to the configured generation backend, passes the resulting prompt to the selected asset provider, and returns an asset descriptor.
+The service validates the intention, obtains optional context from the configured context provider, sends the intention plus context to the configured generation backend, and hands the resulting prompt to the selected asset provider.
 
-Example response in explicit mock mode:
+The response is immediate and carries a **job id**, because real asset providers take minutes to produce a model — longer than a Worker request may last:
 
 ```json
 {
-  "status": "mocked",
+  "status": "accepted",
   "intent": "Create a mysterious industrial zone",
   "prompt": "Create a rich, coherent 3D environment prompt...",
-  "loreSource": "mock",
   "provider": "mock",
-  "asset": {
-    "format": "glb",
-    "provider": "mock",
-    "url": "mock://generated/..."
+  "job": { "id": "bW9ja3wxNzg2...", "state": "queued", "progress": 0 },
+  "links": {
+    "status": "/jobs/bW9ja3wxNzg2...",
+    "model": "/jobs/bW9ja3wxNzg2.../model.glb"
+  },
+  "trace": {
+    "generatedAt": "2026-08-11T23:24:08.243Z",
+    "loreSource": "mock",
+    "backendStatus": "mocked"
   }
 }
 ```
 
-The mock URL is a test descriptor, not a real GLB file.
+`trace` records where the context came from and when the result was produced, so a generated asset stays auditable.
+
+The job id encodes `provider|providerJobId` as base64url. Job state lives with the provider, so the service stays stateless: no database is needed, and any Worker isolate can serve any job id.
+
+### `GET /jobs/:jobId`
+
+Returns `state` (`queued` | `running` | `succeeded` | `failed`), `progress`, and `ready`.
+
+### `GET /jobs/:jobId/model.glb`
+
+Streams the generated model as `model/gltf-binary`. Returns `409` while the job is still running and `502` if the generation failed.
+
+In explicit mock mode this is a **real, valid GLB file** — a single triangle, importable in Unity — not a placeholder descriptor. The whole chain is therefore testable without any credential.
+
+### Failure responses
+
+| Status | Meaning |
+|---|---|
+| `400` | Malformed body, missing `intent`, or unreadable job id |
+| `409` | Model requested before the job completed |
+| `502` | An external provider failed, or a required binding is missing |
+| `503` | `no-executor`: the generation backend recorded the mission but no registered executor provides the requested capability (see [docs/octopus-contract.md](docs/octopus-contract.md)) |
 
 ## Architecture principles
 
@@ -147,17 +172,25 @@ Requirements: Node.js 20+ and npm.
 npm install
 cp .dev.vars.example .dev.vars
 npm run typecheck
+npm test
 npm run dev
 ```
 
 The example local configuration explicitly enables mock mode where applicable. It does not require external generation credentials.
 
-Test the route:
+Test the route end to end:
 
 ```bash
+# 1. Start a generation
 curl -X POST http://localhost:8787/generate \
   -H 'content-type: application/json' \
   -d '{"intent":"Create a mysterious industrial zone"}'
+
+# 2. Follow the job (take the job.id from the response)
+curl http://localhost:8787/jobs/<jobId>
+
+# 3. Download the model once `ready` is true
+curl -o asset.glb http://localhost:8787/jobs/<jobId>/model.glb
 ```
 
 ### Unity during local development
@@ -190,19 +223,22 @@ The implementation must not assume that the provider is a particular vendor. Pro
 ### Generation backend
 
 - `OCTOPUS_ENGINE_URL` — base URL of the configured generation backend.
-- `OCTOPUS_ENGINE_GENERATE_PATH` — capability path; defaults to `/content.generate`.
+- `OCTOPUS_ENGINE_MISSION_PATH` — mission route; defaults to `/mission`.
+- `OCTOPUS_ENGINE_CAPABILITY` — capability requested in the payload; defaults to `content.generate`.
 - `OCTOPUS_ENGINE_API_KEY` — optional bearer credential.
 - `OCTOPUS_ENGINE_MOCK` — set to `true` to bypass the external backend locally.
 
 The current intended generation backend is the existing Octopus Engine Worker, but its implementation remains outside this repository.
 
+> **Read [docs/octopus-contract.md](docs/octopus-contract.md) before switching the backend to live.** The capability is part of the payload, not the URL path, and `content.generate` is not one of the backend's intrinsic capabilities: without a registered executor the backend records the mission and returns `waiting-executor` without generating anything.
+
 ### Asset provider
 
-- `THREE_D_PROVIDER` — logical adapter name; use `mock` for local development.
-- `THREE_D_API_URL` — endpoint of the configured external asset provider.
-- `THREE_D_API_KEY` — optional bearer credential.
+- `THREE_D_PROVIDER` — logical adapter name: `mock`, `meshy` or `tripo`.
+- `THREE_D_API_KEY` — bearer credential for the selected provider.
+- `THREE_D_API_URL` — optional base URL override, useful for testing against a stub.
 
-No commercial vendor name, URL, SDK, or API key is hardcoded into the generic service.
+No commercial vendor name, URL, SDK, or API key is hardcoded into the generic service: vendor protocol lives in `src/adapters/three-d/<name>.ts` and nowhere else, and the credential binding stays generic. Adding a provider means adding one adapter that implements `ThreeDProvider` and registering it in the factory.
 
 ### Scene and publication providers
 
@@ -231,7 +267,13 @@ GitHub Actions validates the TypeScript project on pushes to `main` and pull req
 
 Blacklace Island is the first major use case for this tool. Its narrative context, visual rules, entities, zones, assets and world-specific behaviour can be supplied through dedicated context/world integrations.
 
-None of those concepts should become mandatory assumptions in the generic creator layer.
+None of those concepts should become mandatory assumptions in the generic creator layer. Accordingly, everything Blacklace-specific lives under `docs/` — never in `src/models`, `src/engine` or `src/routes`:
+
+- [docs/sources.md](docs/sources.md) — what this repository installs for Blacklace Island, which external sources feed it (Notion, `blacklace-echo`, the novel), and the constitutional rules those sources impose on the code.
+- [docs/lore/blacklace-island.md](docs/lore/blacklace-island.md) — structured lore sheet: zones, entities, universe rules, visual language, prohibitions.
+- [docs/lore-ingestion-prompt.md](docs/lore-ingestion-prompt.md) — reusable prompt to regenerate that sheet when the canon changes.
+
+The first generation target follows the production order set by the visual bible: **Rotas → Feuch Institute → Max Liberty**.
 
 ## Planned capabilities
 

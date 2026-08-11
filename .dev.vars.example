@@ -1,15 +1,23 @@
-# Local development defaults
+# Local development defaults. Copy to `.dev.vars` (gitignored) and fill in.
+# Never commit credentials: use Worker secrets in production.
+
+# Generation backend. The backend exposes a single mission route and the
+# capability travels in the payload - see docs/octopus-contract.md.
 OCTOPUS_ENGINE_URL=https://octopus-engine-app.benoitlubert.workers.dev
 OCTOPUS_ENGINE_API_KEY=
-OCTOPUS_ENGINE_GENERATE_PATH=/content.generate
+OCTOPUS_ENGINE_MISSION_PATH=/mission
+OCTOPUS_ENGINE_CAPABILITY=content.generate
 OCTOPUS_ENGINE_MOCK=true
 
-# Lore is a provider boundary. Keep it mocked locally until a concrete protocol adapter is added.
+# Context boundary. `none` for no narrative context, `mock` for local
+# development, or an adapter name once a concrete protocol adapter is added.
 LORE_PROVIDER=mock
 LORE_API_URL=
 LORE_API_KEY=
 
-# Keep external 3D generation mocked until a provider-specific protocol adapter is added.
+# Asset boundary. `mock` returns a real, importable GLB without any credential.
+# `meshy` and `tripo` both read THREE_D_API_KEY; THREE_D_API_URL only overrides
+# the provider base URL when testing against a stub.
 THREE_D_PROVIDER=mock
 THREE_D_API_URL=
 THREE_D_API_KEY=
