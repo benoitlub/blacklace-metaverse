@@ -31,6 +31,6 @@ export interface Env {
   OCTOPUS_ENGINE_GENERATE_PATH?: string;
   OCTOPUS_ENGINE_MOCK?: string;
   THREE_D_PROVIDER?: string;
-  MESHY_API_KEY?: string;
-  TRIPO_API_KEY?: string;
+  THREE_D_API_URL?: string;
+  THREE_D_API_KEY?: string;
 }
