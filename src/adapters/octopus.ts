@@ -1,36 +1,56 @@
 import type { Env } from "../index";
 import type { OctopusGenerateResponse } from "../types";
 
+const DEFAULT_GENERATE_PATH = "/content.generate";
+const DEFAULT_TIMEOUT_MS = 30_000;
+
 export async function generateWithOctopus(intent: string, env: Env): Promise<string> {
-  const baseUrl = env.OCTOPUS_ENGINE_URL.replace(/\/$/, "");
+  if (env.OCTOPUS_ENGINE_MOCK === "true") {
+    return mockOctopusPrompt(intent);
+  }
 
   if (!env.OCTOPUS_ENGINE_URL) {
     return mockOctopusPrompt(intent);
   }
 
-  const response = await fetch(`${baseUrl}/content.generate`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(env.OCTOPUS_ENGINE_API_KEY
-        ? { authorization: `Bearer ${env.OCTOPUS_ENGINE_API_KEY}` }
-        : {}),
-    },
-    body: JSON.stringify({ intent }),
-  });
+  const baseUrl = env.OCTOPUS_ENGINE_URL.replace(/\/$/, "");
+  const path = env.OCTOPUS_ENGINE_GENERATE_PATH || DEFAULT_GENERATE_PATH;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
-  if (!response.ok) {
-    throw new Error(`Octopus Engine returned HTTP ${response.status}`);
+  try {
+    const response = await fetch(`${baseUrl}${path.startsWith("/") ? path : `/${path}`}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(env.OCTOPUS_ENGINE_API_KEY
+          ? { authorization: `Bearer ${env.OCTOPUS_ENGINE_API_KEY}` }
+          : {}),
+      },
+      body: JSON.stringify({ intent }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Octopus Engine returned HTTP ${response.status}`);
+    }
+
+    const data = (await response.json()) as OctopusGenerateResponse;
+    const prompt = data.prompt ?? data.output ?? data.result;
+
+    if (typeof prompt !== "string" || !prompt.trim()) {
+      throw new Error("Octopus Engine response did not contain a generated prompt");
+    }
+
+    return prompt.trim();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Octopus Engine request timed out after 30 seconds");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const data = (await response.json()) as OctopusGenerateResponse;
-  const prompt = data.prompt ?? data.output ?? data.result;
-
-  if (typeof prompt !== "string" || !prompt.trim()) {
-    throw new Error("Octopus Engine response did not contain a generated prompt");
-  }
-
-  return prompt;
 }
 
 function mockOctopusPrompt(intent: string): string {
