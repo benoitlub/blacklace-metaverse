@@ -13,7 +13,17 @@ export interface GenerateResult {
   intent: string;
   prompt: string;
   provider: string;
+  loreSource: string;
   asset: GeneratedAsset;
+}
+
+export interface LoreContext {
+  source: string;
+  context: string;
+}
+
+export interface LoreProvider {
+  getContext(intent: string): Promise<LoreContext>;
 }
 
 export interface OctopusGenerateResponse {
