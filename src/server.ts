@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { handleUnityBridgeRequest } from "./bridge";
 import type { UnityBridgeRequest } from "./bridge";
-import type { SceneProvider } from "./providers";
+import type { SceneProvider } from "./providers/scene";
 
 export function createApp(provider: SceneProvider): Hono {
   const app = new Hono();
