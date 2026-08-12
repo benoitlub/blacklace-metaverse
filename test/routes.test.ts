@@ -112,8 +112,33 @@ describe("GET /jobs/:jobId", () => {
 });
 
 describe("GET /health", () => {
-  it("stays available", async () => {
+  it("reports the effective configuration of each boundary", async () => {
     const response = await app.request("/health", {}, env);
     expect(response.status).toBe(200);
+
+    const body = (await response.json()) as Record<string, any>;
+    expect(body.status).toBe("ok");
+    expect(body.providers.generation.mode).toBe("mock");
+    expect(body.providers.generation.capability).toBe("content.generate");
+    expect(body.providers.context.name).toBe("mock");
+    expect(body.providers.asset.name).toBe("mock");
+  });
+
+  it("never exposes credential values", async () => {
+    const response = await app.request(
+      "/health",
+      {},
+      {
+        ...env,
+        THREE_D_API_KEY: "secret-must-not-leak",
+        LORE_API_KEY: "secret-must-not-leak",
+        OCTOPUS_ENGINE_API_KEY: "secret-must-not-leak",
+      } as unknown as Env,
+    );
+
+    const raw = await response.text();
+    expect(raw).not.toContain("secret-must-not-leak");
+    // Presence is reported as a boolean instead.
+    expect(JSON.parse(raw).providers.asset.credentialConfigured).toBe(true);
   });
 });

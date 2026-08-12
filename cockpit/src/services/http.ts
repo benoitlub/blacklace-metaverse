@@ -1,18 +1,45 @@
 import { getApiBase } from "./config";
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getApiBase()}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...init?.headers,
-    },
-  });
+/**
+ * Carries the response body alongside the status.
+ *
+ * The service reports failures explicitly — a missing binding, an asset
+ * provider error, or a generation backend with no registered executor. The UI
+ * must be able to show what actually went wrong instead of a generic message.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly payload: Record<string, unknown>;
 
-  if (!response.ok) {
-    throw new Error(`API ${response.status}: ${response.statusText}`);
+  constructor(status: number, payload: Record<string, unknown>, fallback: string) {
+    super(typeof payload.error === "string" ? payload.error : fallback);
+    this.name = "ApiError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
+export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${getApiBase()}${path}`, {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        ...(init?.body ? { "Content-Type": "application/json" } : {}),
+        ...init?.headers,
+      },
+    });
+  } catch {
+    throw new Error(`Cannot reach the service at ${getApiBase()}`);
   }
 
-  return response.json() as Promise<T>;
+  const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+
+  if (!response.ok) {
+    throw new ApiError(response.status, payload, `${response.status} ${response.statusText}`);
+  }
+
+  return payload as T;
 }

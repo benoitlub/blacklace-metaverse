@@ -193,6 +193,20 @@ curl http://localhost:8787/jobs/<jobId>
 curl -o asset.glb http://localhost:8787/jobs/<jobId>/model.glb
 ```
 
+### Cockpit
+
+A small React interface lives in `cockpit/`. It talks to the service over the same HTTP contract as any other client:
+
+```bash
+cd cockpit
+npm install
+npm run dev          # http://localhost:5173
+```
+
+It reads `GET /health` to show which adapter is selected at each boundary, and its *AI / Generation* page submits an intention, polls the job, and offers the resulting GLB for download.
+
+The cockpit has **no mock data of its own**: the service already has explicit mock modes at each boundary, and a second UI-level fake would make it impossible to tell whether what you are looking at is real. When the service is unreachable the interface says so instead of showing plausible numbers. The API base URL is configurable in *Settings* and stored in `localStorage`.
+
 ### Unity during local development
 
 A Unity Editor or running Unity application can call the local Worker directly:
